@@ -1,0 +1,40 @@
+---
+import { Image, getImage } from 'astro:assets';
+
+const { images } = Astro.props;
+const fulls = await Promise.all(images.map((img) => getImage({ src: img.src, width: 1600 })));
+---
+
+<div class="gallery-grid">
+  {
+    images.map((img, i) => (
+      <button type="button" class="gallery-thumb" data-full={fulls[i].src} data-alt={img.alt}>
+        <Image src={img.src} alt={img.alt} width={500} height={375} loading={i < 3 ? 'eager' : 'lazy'} />
+      </button>
+    ))
+  }
+</div>
+
+<dialog class="lightbox" id="lightbox">
+  <button class="close" id="lightbox-close" type="button" aria-label="Schließen">&times;</button>
+  <img id="lightbox-img" src="" alt="" />
+</dialog>
+
+<script>
+  // @ts-nocheck
+  const dialog = document.getElementById('lightbox');
+  const img = document.getElementById('lightbox-img');
+
+  document.querySelectorAll('.gallery-thumb').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      img.src = btn.dataset.full;
+      img.alt = btn.dataset.alt;
+      dialog.showModal();
+    });
+  });
+
+  document.getElementById('lightbox-close').addEventListener('click', () => dialog.close());
+  dialog.addEventListener('click', (e) => {
+    if (e.target === dialog) dialog.close();
+  });
+</script>

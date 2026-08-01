@@ -1,0 +1,56 @@
+---
+import '../styles/global.css';
+import Sun from '@lucide/astro/icons/sun';
+import Moon from '@lucide/astro/icons/moon';
+
+interface Props {
+  title: string;
+  description?: string;
+}
+
+const { title, description = 'Ferienwohnungen am Gardasee' } = Astro.props;
+---
+
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/svg+xml" href={`${import.meta.env.BASE_URL}favicon.svg`} />
+    <meta name="description" content={description} />
+    <title>{title}</title>
+    <script is:inline>
+      // ponytail: blocking script avoids a flash of the wrong theme on load
+      const stored = localStorage.getItem('theme');
+      const theme = stored ?? (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+      document.documentElement.dataset.theme = theme;
+    </script>
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="wrap">
+        <a class="brand" href={import.meta.env.BASE_URL}>Gardasee Ferienwohnungen</a>
+        <nav>
+          <a href={import.meta.env.BASE_URL}>Alle Unterkünfte</a>
+          <button class="theme-toggle" id="theme-toggle" type="button" aria-label="Farbschema umschalten">
+            <Sun size={18} class="icon-sun" />
+            <Moon size={18} class="icon-moon" />
+          </button>
+        </nav>
+      </div>
+    </header>
+    <slot />
+    <footer>
+      <div class="wrap">
+        &copy; {new Date().getFullYear()} Gardasee Ferienwohnungen
+      </div>
+    </footer>
+    <script is:inline>
+      document.getElementById('theme-toggle').addEventListener('click', () => {
+        const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+        document.documentElement.dataset.theme = next;
+        localStorage.setItem('theme', next);
+      });
+    </script>
+  </body>
+</html>

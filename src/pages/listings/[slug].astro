@@ -1,0 +1,242 @@
+---
+import { getCollection } from 'astro:content';
+import { Image } from 'astro:assets';
+import Layout from '../../layouts/Layout.astro';
+import Gallery from '../../components/Gallery.astro';
+import ReservationForm from '../../components/ReservationForm.astro';
+import BedDouble from '@lucide/astro/icons/bed-double';
+import Bath from '@lucide/astro/icons/bath';
+import Users from '@lucide/astro/icons/users';
+import Ruler from '@lucide/astro/icons/ruler';
+import MapPin from '@lucide/astro/icons/map-pin';
+import Mail from '@lucide/astro/icons/mail';
+import Check from '@lucide/astro/icons/check';
+
+export async function getStaticPaths() {
+  const listings = await getCollection('listings');
+  return listings.map((listing) => ({
+    params: { slug: listing.id },
+    props: { listing },
+  }));
+}
+
+const { listing } = Astro.props;
+const {
+  title,
+  location,
+  tagline,
+  heroImage,
+  intro,
+  description,
+  facts,
+  amenities,
+  highlights,
+  gallery,
+  distances,
+  activities,
+  excursions,
+  arrival,
+  pricingNotes,
+  cancellationPolicy,
+  host,
+  reviews,
+  ratingAverage,
+  ratingCount,
+  coords,
+  contactEmail,
+} = listing.data;
+
+const mapSrc = coords
+  ? `https://www.openstreetmap.org/export/embed.html?bbox=${coords.lng - 0.01}%2C${coords.lat - 0.008}%2C${coords.lng + 0.01}%2C${coords.lat + 0.008}&layer=mapnik&marker=${coords.lat}%2C${coords.lng}`
+  : null;
+---
+
+<Layout title={`${title} — ${location}`} description={tagline}>
+  <section class="hero">
+    <Image src={heroImage} alt={title} width={1900} priority />
+    <div class="hero-content">
+      <div class="wrap">
+        <span class="location">{location}</span>
+        <h1>{title}</h1>
+        <p class="tagline">{tagline}</p>
+        <div class="cta-row">
+          <a class="btn" href="#anfrage">Jetzt anfragen</a>
+          <a class="btn btn-outline" href="#galerie">Galerie ansehen</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="tight">
+    <div class="wrap intro-grid">
+      <div>
+        <p>{intro}</p>
+        {description.map((p) => <p>{p}</p>)}
+      </div>
+      <div class="facts">
+        <ul class="facts-list">
+          <li><BedDouble class="icon" size={20} /> {facts.bedrooms} Schlafzimmer</li>
+          <li><Bath class="icon" size={20} /> {facts.bathrooms} Bäder</li>
+          <li><Users class="icon" size={20} /> Max. {facts.guests} Gäste</li>
+          <li><Ruler class="icon" size={20} /> {facts.sizeSqm} m²</li>
+        </ul>
+        <a class="btn" href="#anfrage">Unverbindlich anfragen</a>
+      </div>
+    </div>
+  </section>
+
+  <section class="highlights">
+    <div class="wrap">
+      <p class="section-label">Warum hier buchen</p>
+      <div class="highlight-grid">
+        {
+          highlights.map((h) => (
+            <div class="highlight-card">
+              <Image src={h.image} alt={h.title} width={400} height={300} />
+              <h3>{h.title}</h3>
+              <p>{h.text}</p>
+            </div>
+          ))
+        }
+      </div>
+    </div>
+  </section>
+
+  <section id="galerie">
+    <div class="wrap">
+      <p class="section-label">Galerie</p>
+      <Gallery images={gallery} />
+    </div>
+  </section>
+
+  <section id="ausstattung" class="tight">
+    <div class="wrap">
+      <p class="section-label">Ausstattung</p>
+      <ul class="amenities-grid">
+        {amenities.map((a) => <li><Check class="icon" size={16} /> {a}</li>)}
+      </ul>
+    </div>
+  </section>
+
+  {
+    (distances || mapSrc) && (
+      <section id="lage" class="highlights">
+        <div class="wrap">
+          <p class="section-label"><MapPin class="icon" size={16} /> Lage &amp; Entfernungen</p>
+          {mapSrc && <iframe class="map-frame" src={mapSrc} loading="lazy" title={`Karte: ${location}`} />}
+          {distances && (
+            <ul class="amenities-grid" style="margin-top: 1.5rem;">
+              {distances.map((d) => (
+                <li>
+                  {d.label}: {d.value}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      </section>
+    )
+  }
+
+  {
+    (activities || excursions) && (
+      <section class="tight">
+        <div class="wrap">
+          <p class="section-label">In der Nähe</p>
+          {activities && <p>{activities.join(' · ')}</p>}
+          {excursions && (
+            <ul>
+              {excursions.map((e) => <li>{e}</li>)}
+            </ul>
+          )}
+        </div>
+      </section>
+    )
+  }
+
+  {
+    arrival && (
+      <section class="highlights">
+        <div class="wrap">
+          <p class="section-label">Anreise</p>
+          {arrival.map((a) => (
+            <p><strong>{a.mode}:</strong> {a.text}</p>
+          ))}
+        </div>
+      </section>
+    )
+  }
+
+  {
+    (pricingNotes || cancellationPolicy) && (
+      <section class="tight">
+        <div class="wrap">
+          <p class="section-label">Preise &amp; Bedingungen</p>
+          {pricingNotes && (
+            <ul>
+              {pricingNotes.map((n) => <li>{n}</li>)}
+            </ul>
+          )}
+          {cancellationPolicy && <p>{cancellationPolicy}</p>}
+        </div>
+      </section>
+    )
+  }
+
+  {
+    reviews && (
+      <section class="highlights">
+        <div class="wrap">
+          <p class="section-label">
+            Bewertungen
+            {ratingAverage && ` — ${ratingAverage}/5`}
+            {ratingCount && ` (${ratingCount} Bewertungen)`}
+          </p>
+          <div class="highlight-grid">
+            {reviews.map((r) => (
+              <div class="highlight-card">
+                <h3>{r.author}</h3>
+                <p>{r.text}</p>
+                {r.reply && <p><em>Antwort des Gastgebers: {r.reply}</em></p>}
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+    )
+  }
+
+  {
+    host && (
+      <section class="tight">
+        <div class="wrap">
+          <p class="section-label">Ihr Gastgeber</p>
+          <div class="host-card">
+            {host.image ? (
+              <Image class="host-avatar" src={host.image} alt={host.name} width={90} height={90} />
+            ) : (
+              <div class="host-avatar-placeholder"><Users size={28} /></div>
+            )}
+            <div>
+              <h3>{host.name}</h3>
+              {host.languages && <p>{host.languages}</p>}
+            </div>
+          </div>
+          {host.message && <p>{host.message}</p>}
+        </div>
+      </section>
+    )
+  }
+
+  <section id="anfrage" class="booking">
+    <div class="wrap booking-grid">
+      <div class="booking-intro">
+        <p class="section-label">Jetzt anfragen</p>
+        <h2>Ihr Aufenthalt in {location}</h2>
+        <p>Schreiben Sie uns Ihre Wunschtermine — wir melden uns zeitnah mit Verfügbarkeit und Preis zurück.</p>
+        <p class="contact-line"><Mail size={16} /> {contactEmail}</p>
+      </div>
+      <ReservationForm contactEmail={contactEmail} title={title} maxGuests={facts.guests} />
+    </div>
+  </section>
+</Layout>

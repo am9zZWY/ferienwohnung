@@ -1,0 +1,57 @@
+---
+const { contactEmail, title, maxGuests } = Astro.props;
+---
+
+<form class="reserve" id="reserve-form" data-email={contactEmail} data-title={title}>
+  <div class="form-row">
+    <label>
+      Name
+      <input type="text" name="name" required />
+    </label>
+    <label>
+      E-Mail
+      <input type="email" name="email" required />
+    </label>
+  </div>
+  <div class="form-row">
+    <label>
+      Anreise
+      <input type="date" name="checkin" required />
+    </label>
+    <label>
+      Abreise
+      <input type="date" name="checkout" required />
+    </label>
+  </div>
+  <label>
+    Anzahl Gäste
+    <input type="number" name="guests" min="1" max={maxGuests} value="2" required />
+  </label>
+  {maxGuests && <p class="form-note">Diese Unterkunft fasst maximal {maxGuests} Gäste.</p>}
+  <label>
+    Nachricht
+    <textarea name="message" placeholder="Ihre Anfrage, Wünsche oder Fragen"></textarea>
+  </label>
+  <button class="btn" type="submit">Anfrage per E-Mail senden</button>
+  <p class="form-note">Öffnet Ihr E-Mail-Programm mit einer vorausgefüllten Anfrage an den Gastgeber.</p>
+</form>
+
+<script>
+  // @ts-nocheck
+  document.getElementById('reserve-form').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const form = e.target;
+    const data = new FormData(form);
+    const body = [
+      `Name: ${data.get('name')}`,
+      `E-Mail: ${data.get('email')}`,
+      `Anreise: ${data.get('checkin')}`,
+      `Abreise: ${data.get('checkout')}`,
+      `Gäste: ${data.get('guests')}`,
+      '',
+      data.get('message'),
+    ].join('\n');
+    const subject = `Buchungsanfrage: ${form.dataset.title}`;
+    location.href = `mailto:${form.dataset.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+  });
+</script>
