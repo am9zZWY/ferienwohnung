@@ -11,6 +11,9 @@ import Ruler from '@lucide/astro/icons/ruler';
 import MapPin from '@lucide/astro/icons/map-pin';
 import Mail from '@lucide/astro/icons/mail';
 import Check from '@lucide/astro/icons/check';
+import Play from '@lucide/astro/icons/play';
+import Pause from '@lucide/astro/icons/pause';
+import Share2 from '@lucide/astro/icons/share-2';
 
 export async function getStaticPaths() {
   const listings = await getCollection('listings');
@@ -46,14 +49,45 @@ const {
   contactEmail,
 } = listing.data;
 
-const mapSrc = coords
-  ? `https://www.openstreetmap.org/export/embed.html?bbox=${coords.lng - 0.01}%2C${coords.lat - 0.008}%2C${coords.lng + 0.01}%2C${coords.lat + 0.008}&layer=mapnik&marker=${coords.lat}%2C${coords.lng}`
-  : null;
+// ponytail: hero carousel reuses the gallery images already in the schema
+// instead of adding a dedicated "heroImages" field
+const seenSlideSrc = new Set();
+const heroSlides = [
+  { src: heroImage, alt: title },
+  ...gallery.map((g) => ({ src: g.src, alt: g.alt })),
+]
+  .filter((slide) => (seenSlideSrc.has(slide.src.src) ? false : seenSlideSrc.add(slide.src.src)))
+  .slice(0, 6);
 ---
 
 <Layout title={`${title} — ${location}`} description={tagline}>
   <section class="hero">
-    <Image src={heroImage} alt={title} width={1900} priority />
+    <div class="hero-slides" id="hero-slides">
+      {
+        heroSlides.map((slide, i) => (
+          <Image
+            src={slide.src}
+            alt={slide.alt}
+            width={1900}
+            priority={i === 0}
+            class={`hero-slide${i === 0 ? ' is-active' : ''}`}
+          />
+        ))
+      }
+    </div>
+    <div class="hero-controls">
+      <button class="hero-icon-btn share-btn" type="button" aria-label="Link teilen">
+        <Share2 size={17} />
+      </button>
+      {
+        heroSlides.length > 1 && (
+          <button class="hero-icon-btn" id="hero-autoplay-toggle" type="button" aria-pressed="true" aria-label="Automatischen Bildwechsel umschalten">
+            <Pause size={17} class="icon-pause" />
+            <Play size={17} class="icon-play" />
+          </button>
+        )
+      }
+    </div>
     <div class="hero-content">
       <div class="wrap">
         <span class="location">{location}</span>
@@ -66,6 +100,45 @@ const mapSrc = coords
       </div>
     </div>
   </section>
+
+  <script>
+    // @ts-nocheck
+    const slides = [...document.querySelectorAll('.hero-slide')];
+    const toggle = document.getElementById('hero-autoplay-toggle');
+    let index = 0;
+    let timer;
+
+    function show(i) {
+      slides[index]?.classList.remove('is-active');
+      index = (i + slides.length) % slides.length;
+      slides[index].classList.add('is-active');
+    }
+
+    function start() {
+      if (slides.length < 2) return;
+      timer = setInterval(() => show(index + 1), 5000);
+    }
+
+    function stop() {
+      clearInterval(timer);
+    }
+
+    if (toggle) {
+      const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+      if (!reduceMotion) start();
+      toggle.setAttribute('aria-pressed', String(!reduceMotion));
+
+      toggle.addEventListener('click', () => {
+        const playing = toggle.getAttribute('aria-pressed') === 'true';
+        if (playing) {
+          stop();
+        } else {
+          start();
+        }
+        toggle.setAttribute('aria-pressed', String(!playing));
+      });
+    }
+  </script>
 
   <section class="tight">
     <div class="wrap intro-grid">
@@ -118,12 +191,27 @@ const mapSrc = coords
     </div>
   </section>
 
+  <section class="tight">
+    <div class="wrap cta-banner">
+      <div>
+        <h2>Gefällt Ihnen {title}?</h2>
+        <p>Fragen Sie unverbindlich Ihren Wunschzeitraum an.</p>
+      </div>
+      <div class="cta-row">
+        <a class="btn" href="#anfrage">Jetzt anfragen</a>
+        <button class="btn btn-outline share-btn" type="button" aria-label="Diese Unterkunft teilen">
+          <Share2 size={16} /> Teilen
+        </button>
+      </div>
+    </div>
+  </section>
+
   {
-    (distances || mapSrc) && (
+    (distances || coords) && (
       <section id="lage" class="highlights">
         <div class="wrap">
           <p class="section-label"><MapPin class="icon" size={16} /> Lage &amp; Entfernungen</p>
-          {mapSrc && <iframe class="map-frame" src={mapSrc} loading="lazy" title={`Karte: ${location}`} />}
+          {coords && <div class="map-frame" id="map" data-lat={coords.lat} data-lng={coords.lng} data-label={title} />}
           {distances && (
             <ul class="amenities-grid" style="margin-top: 1.5rem;">
               {distances.map((d) => (
@@ -135,6 +223,35 @@ const mapSrc = coords
           )}
         </div>
       </section>
+    )
+  }
+
+  {
+    coords && (
+      <script>
+        // @ts-nocheck
+        import 'leaflet/dist/leaflet.css';
+        import L from 'leaflet';
+
+        const el = document.getElementById('map');
+        const lat = Number(el.dataset.lat);
+        const lng = Number(el.dataset.lng);
+        const map = L.map(el, { scrollWheelZoom: false }).setView([lat, lng], 15);
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+          maxZoom: 19,
+        }).addTo(map);
+
+        const houseIcon = L.divIcon({
+          className: 'map-house-marker',
+          html: '<span><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8"/><path d="M3 10a2 2 0 0 1 .709-1.528l7-6a2 2 0 0 1 2.582 0l7 6A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg></span>',
+          iconSize: [36, 36],
+          iconAnchor: [18, 34],
+        });
+
+        L.marker([lat, lng], { icon: houseIcon }).addTo(map).bindPopup(el.dataset.label);
+      </script>
     )
   }
 

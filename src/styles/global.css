@@ -165,10 +165,21 @@ a {
 .btn-outline {
   background: transparent;
   border: 1.5px solid currentColor;
-  color: #fff;
+  color: var(--color-ink);
 }
 
 .btn-outline:hover {
+  background: rgba(27, 58, 75, 0.08);
+}
+
+/* on the hero/booking dark panels, flip the outline button to light text */
+.hero-content .btn-outline,
+.booking .btn-outline {
+  color: #fff;
+}
+
+.hero-content .btn-outline:hover,
+.booking .btn-outline:hover {
   background: rgba(255, 255, 255, 0.15);
 }
 
@@ -186,13 +197,27 @@ a {
   background: var(--color-panel);
 }
 
-.hero img {
-  width: 100%;
+.hero-slides {
+  position: relative;
   height: 46vh;
   min-height: 320px;
   max-height: 480px;
+  overflow: hidden;
+}
+
+.hero-slide {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
   object-fit: cover;
   object-position: center 35%;
+  opacity: 0;
+  transition: opacity 1.4s ease;
+}
+
+.hero-slide.is-active {
+  opacity: 1;
 }
 
 .hero::after {
@@ -203,6 +228,49 @@ a {
   /* the gradient sits on top of .hero-content in paint order (::after is
      always last); without this it silently eats clicks on the CTA buttons */
   pointer-events: none;
+}
+
+.hero-controls {
+  position: absolute;
+  z-index: 2;
+  top: 1.25rem;
+  right: 1.25rem;
+  display: flex;
+  gap: 0.6rem;
+}
+
+.hero-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.4rem;
+  height: 2.4rem;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  background: rgba(10, 20, 25, 0.35);
+  color: #fff;
+  cursor: pointer;
+}
+
+.hero-icon-btn:hover {
+  background: rgba(10, 20, 25, 0.6);
+}
+
+.hero-icon-btn .icon-play {
+  display: none;
+}
+
+.hero-icon-btn[aria-pressed="false"] .icon-pause {
+  display: none;
+}
+
+.hero-icon-btn[aria-pressed="false"] .icon-play {
+  display: inline-flex;
+}
+
+.hero-icon-btn.is-confirmed {
+  background: var(--color-sage);
+  border-color: var(--color-sage);
 }
 
 .hero-content {
@@ -390,6 +458,43 @@ dialog.lightbox .close {
   cursor: pointer;
 }
 
+dialog.lightbox .nav {
+  position: fixed;
+  top: 50%;
+  transform: translateY(-50%);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
+  border: none;
+  width: 3rem;
+  height: 3rem;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+dialog.lightbox .nav:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+dialog.lightbox .nav.prev {
+  left: 1.5rem;
+}
+
+dialog.lightbox .nav.next {
+  right: 1.5rem;
+}
+
+@media (max-width: 700px) {
+  dialog.lightbox .nav.prev {
+    left: 0.5rem;
+  }
+  dialog.lightbox .nav.next {
+    right: 0.5rem;
+  }
+}
+
 /* Amenities */
 .amenities-grid {
   display: grid;
@@ -417,6 +522,51 @@ dialog.lightbox .close {
   height: 380px;
   border: 1px solid var(--color-border);
   border-radius: var(--radius);
+  background: var(--color-cream-dim);
+}
+
+.map-house-marker span {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50% 50% 50% 0;
+  transform: rotate(-45deg);
+  background: var(--color-terracotta);
+  color: #fff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+}
+
+.map-house-marker svg {
+  transform: rotate(45deg);
+}
+
+/* CTA banner */
+.cta-banner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 1.75rem 2rem;
+}
+
+.cta-banner h2 {
+  font-size: 1.4rem;
+  margin-bottom: 0.2rem;
+}
+
+.cta-banner p {
+  margin: 0;
+  color: var(--color-muted);
+}
+
+.cta-banner .cta-row {
+  margin-top: 0;
 }
 
 /* Host */
@@ -597,13 +747,17 @@ footer {
   gap: 2rem;
 }
 
+.listing-card[hidden] {
+  display: none;
+}
+
 .listing-card {
+  position: relative;
   display: flex;
   flex-direction: column;
   background: var(--color-surface);
   border-radius: var(--radius);
   overflow: hidden;
-  text-decoration: none;
   color: var(--color-ink);
   border: 1px solid var(--color-border);
   transition: transform 0.2s ease, box-shadow 0.2s ease;
@@ -612,6 +766,41 @@ footer {
 .listing-card:hover {
   transform: translateY(-3px);
   box-shadow: 0 12px 24px rgba(27, 58, 75, 0.12);
+}
+
+/* stretched-link pattern: the link covers the whole card so the card body
+   text is clickable too, while .card-share stacks above it in its own
+   corner and gets the click there instead */
+.listing-card .card-link {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+}
+
+.listing-card .card-share {
+  position: absolute;
+  z-index: 2;
+  top: 0.75rem;
+  right: 0.75rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255, 255, 255, 0.85);
+  color: var(--color-ink);
+  cursor: pointer;
+}
+
+.listing-card .card-share:hover {
+  background: #fff;
+}
+
+.listing-card .card-share.is-confirmed {
+  background: var(--color-sage);
+  color: #fff;
 }
 
 .listing-card img {

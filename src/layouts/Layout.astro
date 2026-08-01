@@ -51,6 +51,33 @@ const { title, description = 'Ferienwohnungen am Gardasee' } = Astro.props;
         document.documentElement.dataset.theme = next;
         localStorage.setItem('theme', next);
       });
+
+      // ponytail: one delegated handler covers every .share-btn on the site,
+      // however many a page adds — no per-button script needed
+      document.addEventListener('click', async (e) => {
+        const btn = e.target.closest('.share-btn');
+        if (!btn) return;
+        const url = btn.dataset.shareUrl ? new URL(btn.dataset.shareUrl, location.href).href : location.href;
+        const title = btn.dataset.shareTitle || document.title;
+
+        if (navigator.share) {
+          try {
+            await navigator.share({ title, url });
+          } catch {
+            // user cancelled the native share sheet
+          }
+          return;
+        }
+
+        await navigator.clipboard.writeText(url);
+        const original = btn.getAttribute('aria-label');
+        btn.setAttribute('aria-label', 'Link kopiert!');
+        btn.classList.add('is-confirmed');
+        setTimeout(() => {
+          btn.setAttribute('aria-label', original);
+          btn.classList.remove('is-confirmed');
+        }, 2000);
+      });
     </script>
   </body>
 </html>

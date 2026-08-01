@@ -1,5 +1,7 @@
 ---
 import { Image, getImage } from 'astro:assets';
+import ChevronLeft from '@lucide/astro/icons/chevron-left';
+import ChevronRight from '@lucide/astro/icons/chevron-right';
 
 const { images } = Astro.props;
 const fulls = await Promise.all(images.map((img) => getImage({ src: img.src, width: 1600 })));
@@ -17,24 +19,54 @@ const fulls = await Promise.all(images.map((img) => getImage({ src: img.src, wid
 
 <dialog class="lightbox" id="lightbox">
   <button class="close" id="lightbox-close" type="button" aria-label="Schließen">&times;</button>
+  <button class="nav prev" id="lightbox-prev" type="button" aria-label="Vorheriges Bild">
+    <ChevronLeft size={28} />
+  </button>
   <img id="lightbox-img" src="" alt="" />
+  <button class="nav next" id="lightbox-next" type="button" aria-label="Nächstes Bild">
+    <ChevronRight size={28} />
+  </button>
 </dialog>
 
 <script>
   // @ts-nocheck
   const dialog = document.getElementById('lightbox');
   const img = document.getElementById('lightbox-img');
+  const thumbs = [...document.querySelectorAll('.gallery-thumb')];
+  let index = 0;
 
-  document.querySelectorAll('.gallery-thumb').forEach((btn) => {
+  function show(i) {
+    index = (i + thumbs.length) % thumbs.length;
+    img.src = thumbs[index].dataset.full;
+    img.alt = thumbs[index].dataset.alt;
+  }
+
+  thumbs.forEach((btn, i) => {
     btn.addEventListener('click', () => {
-      img.src = btn.dataset.full;
-      img.alt = btn.dataset.alt;
+      show(i);
       dialog.showModal();
     });
   });
 
   document.getElementById('lightbox-close').addEventListener('click', () => dialog.close());
+  document.getElementById('lightbox-prev').addEventListener('click', () => show(index - 1));
+  document.getElementById('lightbox-next').addEventListener('click', () => show(index + 1));
+
   dialog.addEventListener('click', (e) => {
     if (e.target === dialog) dialog.close();
+  });
+
+  dialog.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowLeft') show(index - 1);
+    if (e.key === 'ArrowRight') show(index + 1);
+  });
+
+  let touchStartX = 0;
+  dialog.addEventListener('touchstart', (e) => {
+    touchStartX = e.changedTouches[0].clientX;
+  });
+  dialog.addEventListener('touchend', (e) => {
+    const delta = e.changedTouches[0].clientX - touchStartX;
+    if (Math.abs(delta) > 40) show(index + (delta < 0 ? 1 : -1));
   });
 </script>
